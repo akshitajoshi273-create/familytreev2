@@ -1,0 +1,15 @@
+Flask
+Flask-CORS
+Flask-JWT-Extended
+python-dotenv
+supabase
+psycopg2-binary
+SQLAlchemy
+alembic
+Pillow
+requests
+email-validator
+bcrypt
+python-jose
+cryptography
+gunicorn

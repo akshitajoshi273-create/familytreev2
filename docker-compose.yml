@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=True
+      - DATABASE_URL=postgresql://familytree:password@postgres:5432/familytree
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+    networks:
+      - family-tree-network
+    command: python main.py
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - REACT_APP_SUPABASE_URL=${SUPABASE_URL}
+      - REACT_APP_SUPABASE_KEY=${SUPABASE_KEY}
+    depends_on:
+      - backend
+    networks:
+      - family-tree-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=familytree
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=familytree
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - family-tree-network
+
+volumes:
+  postgres_data:
+
+networks:
+  family-tree-network:
+    driver: bridge
