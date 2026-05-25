@@ -10,7 +10,7 @@ backend_path = str(Path(__file__).parent)
 if backend_path not in sys.path:
     sys.path.insert(0, backend_path)
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import get_config, Config
@@ -68,9 +68,29 @@ def create_app():
             'version': '1.0.0'
         }), 200
     
-    # Root endpoint
-    @app.route('/', methods=['GET'])
-    def root():
+    # Serve frontend (single-page app) if present, otherwise API root
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_spa(path):
+        # don't interfere with API routes or static/uploads
+        if path.startswith('api') or path.startswith('static') or path.startswith('uploads'):
+            return jsonify({
+                'success': False,
+                'message': 'Endpoint not found'
+            }), 404
+
+        static_dir = os.path.join(backend_path, 'static')
+        index_path = os.path.join(static_dir, 'index.html')
+
+        if os.path.exists(index_path):
+            # if requested file exists in static, serve it
+            requested = os.path.join(static_dir, path)
+            if path and os.path.exists(requested):
+                return send_from_directory(static_dir, path)
+            # otherwise serve the SPA entry point
+            return send_from_directory(static_dir, 'index.html')
+
+        # Fallback JSON root for API-only deployments
         return jsonify({
             'message': 'Family Tree API',
             'version': '1.0.0',

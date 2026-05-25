@@ -1,3 +1,13 @@
+FROM node:18-alpine AS frontend-build
+
+WORKDIR /frontend
+
+# Install frontend dependencies and build
+COPY frontend/package*.json ./
+RUN npm ci --silent
+COPY frontend/ .
+RUN npm run build
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -16,11 +26,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend/ .
 
+# Copy built frontend into backend static folder (if present)
+COPY --from=frontend-build /frontend/dist ./static
+
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose port
+# Expose port for the Flask app
 EXPOSE 5000
 
-# Run the application
+# Run the application using gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "main:create_app()"]
